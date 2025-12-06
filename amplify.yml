@@ -1,0 +1,42 @@
+version: 1
+applications:
+  - appRoot: saas-aws-front
+    platform: WEB_COMPUTE
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - echo "=== Pre-Build Phase ==="
+            - echo "Node version $(node --version)"
+            - echo "NPM version $(npm --version)"
+            - echo "Current directory $(pwd)"
+            - npm ci
+            - echo "Dependencies installed successfully"
+        build:
+          commands:
+            - echo "=== Build Phase ==="
+            - echo "Current directory $(pwd)"
+            - echo "Building Next.js application..."
+            - npm run build
+            - echo "Build completed successfully"
+            - echo "=== Verifying build output ==="
+            - ls -la .next/
+            - ls -la .next/standalone/ || echo "No standalone directory"
+            - echo "=== Copying files for deployment ==="
+            - cp -r .next/static .next/standalone/.next/
+            - if [ -d "public" ]; then cp -r public .next/standalone/; else echo "No public directory found, skipping"; fi
+      artifacts:
+        baseDirectory: .next/standalone
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*
+    buildSpec:
+      phases:
+        install:
+          runtime-versions:
+            nodejs: 22
+          commands:
+            - echo "Using Node.js 22"

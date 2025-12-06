@@ -1,0 +1,264 @@
+{
+  "baseUrl": {
+    "local": "http://localhost:4566/restapis/{api-id}/local/_user_request_",
+    "dev": "https://{api-id}.execute-api.us-west-2.amazonaws.com/dev",
+    "staging": "https://{api-id}.execute-api.us-west-2.amazonaws.com/staging",
+    "prod": "https://{api-id}.execute-api.us-west-2.amazonaws.com/prod"
+  },
+  "endpoints": [
+    {
+      "name": "Upload Document (Base64)",
+      "description": "Subir documento codificado en base64. Para archivos pequeños (<10MB)",
+      "method": "POST",
+      "path": "/documents",
+      "curl": "curl -X POST '{baseUrl}/documents' -H 'Content-Type: application/json' -d '{\"fileName\":\"documento.pdf\",\"mimeType\":\"application/pdf\",\"fileContent\":\"JVBERi0xLjQKJeLjz9MNCg==\",\"userId\":\"user-123\"}'",
+      "requestBody": {
+        "fileName": "documento.pdf",
+        "mimeType": "application/pdf",
+        "fileContent": "base64_encoded_content",
+        "userId": "user-123"
+      },
+      "responseExample": {
+        "statusCode": 201,
+        "body": {
+          "message": "Document uploaded successfully",
+          "document": {
+            "documentId": "uuid",
+            "userId": "user-123",
+            "fileName": "documento.pdf",
+            "fileSize": 45678,
+            "mimeType": "application/pdf",
+            "s3Key": "documents/user-123/uuid/documento.pdf",
+            "s3VersionId": "null",
+            "uploadedAt": "2025-11-24T10:30:00.000Z",
+            "status": "pending",
+            "createdAt": "2025-11-24T10:30:00.000Z",
+            "updatedAt": "2025-11-24T10:30:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "Generate Upload URL",
+      "description": "Generar URL prefirmada para subida directa a S3. Para archivos grandes (>10MB)",
+      "method": "POST",
+      "path": "/documents/upload-url",
+      "curl": "curl -X POST '{baseUrl}/documents/upload-url' -H 'Content-Type: application/json' -d '{\"fileName\":\"video.mp4\",\"mimeType\":\"video/mp4\",\"userId\":\"user-123\"}'",
+      "requestBody": {
+        "fileName": "video.mp4",
+        "mimeType": "video/mp4",
+        "userId": "user-123"
+      },
+      "responseExample": {
+        "statusCode": 200,
+        "body": {
+          "message": "Upload URL generated successfully",
+          "uploadUrl": "https://s3.amazonaws.com/bucket/path?presigned-params",
+          "documentId": "uuid",
+          "s3Key": "documents/user-123/uuid/video.mp4",
+          "expiresIn": 900
+        }
+      },
+      "notes": "Después de obtener la URL, subir el archivo con: curl -X PUT '{uploadUrl}' -H 'Content-Type: video/mp4' --data-binary @video.mp4"
+    },
+    {
+      "name": "Confirm Upload",
+      "description": "Confirmar subida directa a S3 y registrar en DynamoDB",
+      "method": "POST",
+      "path": "/documents/confirm",
+      "curl": "curl -X POST '{baseUrl}/documents/confirm' -H 'Content-Type: application/json' -d '{\"documentId\":\"uuid\",\"s3Key\":\"documents/user-123/uuid/video.mp4\",\"fileSize\":52428800,\"userId\":\"user-123\",\"fileName\":\"video.mp4\",\"mimeType\":\"video/mp4\"}'",
+      "requestBody": {
+        "documentId": "uuid",
+        "s3Key": "documents/user-123/uuid/video.mp4",
+        "fileSize": 52428800,
+        "userId": "user-123",
+        "fileName": "video.mp4",
+        "mimeType": "video/mp4"
+      },
+      "responseExample": {
+        "statusCode": 201,
+        "body": {
+          "message": "Upload confirmed successfully",
+          "document": {
+            "documentId": "uuid",
+            "userId": "user-123",
+            "fileName": "video.mp4",
+            "fileSize": 52428800,
+            "mimeType": "video/mp4",
+            "s3Key": "documents/user-123/uuid/video.mp4",
+            "s3VersionId": "null",
+            "uploadedAt": "2025-11-24T10:35:00.000Z",
+            "status": "completed",
+            "createdAt": "2025-11-24T10:35:00.000Z",
+            "updatedAt": "2025-11-24T10:35:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "Get Document",
+      "description": "Obtener información de un documento por ID. Opcionalmente incluir URL de descarga",
+      "method": "GET",
+      "path": "/documents/{documentId}",
+      "curl": "curl -X GET '{baseUrl}/documents/{documentId}?includeDownloadUrl=true'",
+      "pathParameters": {
+        "documentId": "uuid"
+      },
+      "queryParameters": {
+        "includeDownloadUrl": "true (opcional)"
+      },
+      "responseExample": {
+        "statusCode": 200,
+        "body": {
+          "document": {
+            "documentId": "uuid",
+            "userId": "user-123",
+            "fileName": "documento.pdf",
+            "fileSize": 45678,
+            "mimeType": "application/pdf",
+            "s3Key": "documents/user-123/uuid/documento.pdf",
+            "s3VersionId": "null",
+            "uploadedAt": "2025-11-24T10:30:00.000Z",
+            "status": "completed",
+            "createdAt": "2025-11-24T10:30:00.000Z",
+            "updatedAt": "2025-11-24T10:30:00.000Z"
+          },
+          "downloadUrl": "https://s3.amazonaws.com/bucket/path?presigned-params"
+        }
+      }
+    },
+    {
+      "name": "Get Documents by User",
+      "description": "Listar todos los documentos de un usuario",
+      "method": "GET",
+      "path": "/documents/user/{userId}",
+      "curl": "curl -X GET '{baseUrl}/documents/user/{userId}'",
+      "pathParameters": {
+        "userId": "user-123"
+      },
+      "responseExample": {
+        "statusCode": 200,
+        "body": {
+          "userId": "user-123",
+          "count": 2,
+          "documents": [
+            {
+              "documentId": "uuid-1",
+              "userId": "user-123",
+              "fileName": "documento1.pdf",
+              "fileSize": 45678,
+              "mimeType": "application/pdf",
+              "s3Key": "documents/user-123/uuid-1/documento1.pdf",
+              "status": "completed",
+              "uploadedAt": "2025-11-24T10:30:00.000Z",
+              "createdAt": "2025-11-24T10:30:00.000Z",
+              "updatedAt": "2025-11-24T10:30:00.000Z"
+            },
+            {
+              "documentId": "uuid-2",
+              "userId": "user-123",
+              "fileName": "imagen.jpg",
+              "fileSize": 123456,
+              "mimeType": "image/jpeg",
+              "s3Key": "documents/user-123/uuid-2/imagen.jpg",
+              "status": "completed",
+              "uploadedAt": "2025-11-24T11:00:00.000Z",
+              "createdAt": "2025-11-24T11:00:00.000Z",
+              "updatedAt": "2025-11-24T11:00:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete Document",
+      "description": "Eliminar documento de S3 y DynamoDB. Operación irreversible",
+      "method": "DELETE",
+      "path": "/documents/{documentId}",
+      "curl": "curl -X DELETE '{baseUrl}/documents/{documentId}'",
+      "pathParameters": {
+        "documentId": "uuid"
+      },
+      "responseExample": {
+        "statusCode": 200,
+        "body": {
+          "message": "Document deleted successfully",
+          "documentId": "uuid"
+        }
+      }
+    },
+    {
+      "name": "Update Document Status",
+      "description": "Actualizar estado de procesamiento del documento",
+      "method": "PATCH",
+      "path": "/documents/{documentId}/status",
+      "curl": "curl -X PATCH '{baseUrl}/documents/{documentId}/status' -H 'Content-Type: application/json' -d '{\"status\":\"completed\"}'",
+      "pathParameters": {
+        "documentId": "uuid"
+      },
+      "requestBody": {
+        "status": "pending | processing | completed | failed"
+      },
+      "responseExample": {
+        "statusCode": 200,
+        "body": {
+          "message": "Document status updated successfully",
+          "document": {
+            "documentId": "uuid",
+            "status": "completed",
+            "updatedAt": "2025-11-24T12:00:00.000Z"
+          }
+        }
+      }
+    }
+  ],
+  "errorResponses": {
+    "400": {
+      "statusCode": 400,
+      "body": {
+        "error": "Bad Request",
+        "message": "Descripción del error de validación"
+      }
+    },
+    "404": {
+      "statusCode": 404,
+      "body": {
+        "error": "Not Found",
+        "message": "Document not found"
+      }
+    },
+    "500": {
+      "statusCode": 500,
+      "body": {
+        "error": "Internal Server Error",
+        "message": "Descripción del error interno"
+      }
+    }
+  },
+  "notes": {
+    "authentication": "Actualmente NO implementada. Se debe agregar header 'Authorization: Bearer {token}' cuando se implemente JWT/Cognito",
+    "cors": "Ya configurado en el backend",
+    "fileSizeLimits": {
+      "base64Upload": "10 MB máximo",
+      "presignedUrl": "5 GB máximo (límite de S3)"
+    },
+    "urlExpiration": {
+      "uploadUrl": "900 segundos (15 minutos)",
+      "downloadUrl": "3600 segundos (1 hora)"
+    },
+    "statusValues": [
+      "pending",
+      "processing",
+      "completed",
+      "failed"
+    ]
+  },
+  "testingLocal": {
+    "setup": [
+      "npm run localstack:up",
+      "npm run cdk:deploy:local"
+    ],
+    "getApiUrl": "El API ID se muestra en el output del comando cdk:deploy:local",
+    "exampleCurl": "curl -X POST 'http://localhost:4566/restapis/{api-id}/local/_user_request_/documents' -H 'Content-Type: application/json' -d '{\"fileName\":\"test.txt\",\"mimeType\":\"text/plain\",\"fileContent\":\"SGVsbG8gV29ybGQ=\",\"userId\":\"test-user\"}'"
+  }
+}
