@@ -47,3 +47,4 @@ firestore-debug.log
 .env.*
 !.env.example
 AGENTS.md
+.claude
