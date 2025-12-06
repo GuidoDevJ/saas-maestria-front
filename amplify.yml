@@ -11,10 +11,10 @@ frontend:
         - echo "Building Next.js application..."
         - npm run build
         - echo "Preparing standalone deployment..."
-        - cp -r .next/static .next/standalone/.next/
-        - cp -r public .next/standalone/ || echo "No public directory"
+        - cp -r .next/static .next/standalone/.next/static
+        - cp -r public .next/standalone/public || echo "No public directory"
   artifacts:
-    baseDirectory: .next/standalone
+    baseDirectory: .next
     files:
       - '**/*'
   cache:
